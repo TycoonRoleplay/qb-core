@@ -285,7 +285,7 @@ function QBCore.Functions.CreateAutomobile(source, model, coords, warp)
     while not DoesEntityExist(veh) do Wait(0) end
     if warp then TaskWarpPedIntoVehicle(GetPlayerPed(source), veh, -1) end
     return veh
-end
+end*
 
 --- New & more reliable server side native for creating vehicles
 ---comment
