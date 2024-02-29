@@ -5,6 +5,7 @@ QBCore.Player = {}
 -- Don't touch any of this unless you know what you are doing
 -- Will cause major issues!
 
+local resourceName = GetCurrentResourceName()
 function QBCore.Player.Login(source, citizenid, newData)
     if source and source ~= '' then
         if citizenid then
@@ -23,7 +24,7 @@ function QBCore.Player.Login(source, citizenid, newData)
                 end
                 QBCore.Player.CheckPlayerData(source, PlayerData)
             else
-                DropPlayer(source, Lang:t("info.exploit_dropped"))
+                DropPlayer(source, Lang:t('info.exploit_dropped'))
                 TriggerEvent('qb-log:server:CreateLog', 'anticheat', 'Anti-Cheat', 'white', GetPlayerName(source) .. ' Has Been Dropped For Character Joining Exploit', false)
             end
         else
@@ -31,14 +32,14 @@ function QBCore.Player.Login(source, citizenid, newData)
         end
         return true
     else
-        QBCore.ShowError(GetCurrentResourceName(), 'ERROR QBCORE.PLAYER.LOGIN - NO SOURCE GIVEN!')
+        QBCore.ShowError(resourceName, 'ERROR QBCORE.PLAYER.LOGIN - NO SOURCE GIVEN!')
         return false
     end
 end
 
 function QBCore.Player.GetOfflinePlayer(citizenid)
     if citizenid then
-        local PlayerData = MySQL.prepare.await('SELECT * FROM players where citizenid = ?', {citizenid})
+        local PlayerData = MySQL.prepare.await('SELECT * FROM players where citizenid = ?', { citizenid })
         if PlayerData then
             PlayerData.money = json.decode(PlayerData.money)
             PlayerData.job = json.decode(PlayerData.job)
@@ -59,7 +60,7 @@ end
 
 function QBCore.Player.GetPlayerByLicense(license)
     if license then
-        local PlayerData = MySQL.prepare.await('SELECT * FROM players where license = ?', {license})
+        local PlayerData = MySQL.prepare.await('SELECT * FROM players where license = ?', { license })
         if PlayerData then
             PlayerData.money = json.decode(PlayerData.money)
             PlayerData.job = json.decode(PlayerData.job)
@@ -121,7 +122,6 @@ function QBCore.Player.CheckPlayerData(source, PlayerData)
     PlayerData.metadata['status'] = PlayerData.metadata['status'] or {}
     PlayerData.metadata['phone'] = PlayerData.metadata['phone'] or {}
     PlayerData.metadata['fitbit'] = PlayerData.metadata['fitbit'] or {}
-    PlayerData.metadata['commandbinds'] = PlayerData.metadata['commandbinds'] or {}
     PlayerData.metadata['bloodtype'] = PlayerData.metadata['bloodtype'] or QBCore.Config.Player.Bloodtypes[math.random(1, #QBCore.Config.Player.Bloodtypes)]
     PlayerData.metadata['dealerrep'] = PlayerData.metadata['dealerrep'] or 0
     PlayerData.metadata['craftingrep'] = PlayerData.metadata['craftingrep'] or 0
@@ -179,7 +179,7 @@ function QBCore.Player.CheckPlayerData(source, PlayerData)
     PlayerData.gang.grade.name = PlayerData.gang.grade.name or 'none'
     PlayerData.gang.grade.level = PlayerData.gang.grade.level or 0
     -- Other
-    PlayerData.position = PlayerData.position or QBConfig.DefaultSpawn
+    PlayerData.position = PlayerData.position or QBCore.Config.DefaultSpawn
     PlayerData.items = GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:LoadInventory(PlayerData.source, PlayerData.citizenid) or {}
     return QBCore.Player.CreatePlayer(PlayerData, Offline)
 end
@@ -328,8 +328,8 @@ function QBCore.Player.CreatePlayer(PlayerData, Offline)
                 TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') added, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
             end
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
-            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, "add", reason)
-            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, "add", reason)
+            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
+            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
         end
 
         return true
@@ -361,8 +361,8 @@ function QBCore.Player.CreatePlayer(PlayerData, Offline)
             if moneytype == 'bank' then
                 TriggerClientEvent('qb-phone:client:RemoveBankMoney', self.PlayerData.source, amount)
             end
-            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, "remove", reason)
-            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, "remove", reason)
+            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
+            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
         end
 
         return true
@@ -381,8 +381,8 @@ function QBCore.Player.CreatePlayer(PlayerData, Offline)
             self.Functions.UpdatePlayerData()
             TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'SetMoney', 'green', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') set, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
             TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
-            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, "set", reason)
-            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, "set", reason)
+            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
+            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
         end
 
         return true
@@ -457,7 +457,7 @@ end
 
 function QBCore.Functions.AddPlayerMethod(ids, methodName, handler)
     local idType = type(ids)
-    if idType == "number" then
+    if idType == 'number' then
         if ids == -1 then
             for _, v in pairs(QBCore.Players) do
                 v.Functions.AddMethod(methodName, handler)
@@ -467,7 +467,7 @@ function QBCore.Functions.AddPlayerMethod(ids, methodName, handler)
 
             QBCore.Players[ids].Functions.AddMethod(methodName, handler)
         end
-    elseif idType == "table" and table.type(ids) == "array" then
+    elseif idType == 'table' and table.type(ids) == 'array' then
         for i = 1, #ids do
             QBCore.Functions.AddPlayerMethod(ids[i], methodName, handler)
         end
@@ -484,7 +484,7 @@ end
 
 function QBCore.Functions.AddPlayerField(ids, fieldName, data)
     local idType = type(ids)
-    if idType == "number" then
+    if idType == 'number' then
         if ids == -1 then
             for _, v in pairs(QBCore.Players) do
                 v.Functions.AddField(fieldName, data)
@@ -494,7 +494,7 @@ function QBCore.Functions.AddPlayerField(ids, fieldName, data)
 
             QBCore.Players[ids].Functions.AddField(fieldName, data)
         end
-    elseif idType == "table" and table.type(ids) == "array" then
+    elseif idType == 'table' and table.type(ids) == 'array' then
         for i = 1, #ids do
             QBCore.Functions.AddPlayerField(ids[i], fieldName, data)
         end
@@ -521,9 +521,9 @@ function QBCore.Player.Save(source)
             metadata = json.encode(PlayerData.metadata)
         })
         if GetResourceState('qb-inventory') ~= 'missing' then exports['qb-inventory']:SaveInventory(source) end
-        QBCore.ShowSuccess(GetCurrentResourceName(), PlayerData.name .. ' PLAYER SAVED!')
+        QBCore.ShowSuccess(resourceName, PlayerData.name .. ' PLAYER SAVED!')
     else
-        QBCore.ShowError(GetCurrentResourceName(), 'ERROR QBCORE.PLAYER.SAVE - PLAYERDATA IS EMPTY!')
+        QBCore.ShowError(resourceName, 'ERROR QBCORE.PLAYER.SAVE - PLAYERDATA IS EMPTY!')
     end
 end
 
@@ -542,9 +542,9 @@ function QBCore.Player.SaveOffline(PlayerData)
             metadata = json.encode(PlayerData.metadata)
         })
         if GetResourceState('qb-inventory') ~= 'missing' then exports['qb-inventory']:SaveInventory(PlayerData, true) end
-        QBCore.ShowSuccess(GetCurrentResourceName(), PlayerData.name .. ' OFFLINE PLAYER SAVED!')
+        QBCore.ShowSuccess(resourceName, PlayerData.name .. ' OFFLINE PLAYER SAVED!')
     else
-        QBCore.ShowError(GetCurrentResourceName(), 'ERROR QBCORE.PLAYER.SAVEOFFLINE - PLAYERDATA IS EMPTY!')
+        QBCore.ShowError(resourceName, 'ERROR QBCORE.PLAYER.SAVEOFFLINE - PLAYERDATA IS EMPTY!')
     end
 end
 
@@ -569,13 +569,13 @@ function QBCore.Player.DeleteCharacter(source, citizenid)
     local license = QBCore.Functions.GetIdentifier(source, 'license')
     local result = MySQL.scalar.await('SELECT license FROM players where citizenid = ?', { citizenid })
     if license == result then
-        local query = "DELETE FROM %s WHERE citizenid = ?"
+        local query = 'DELETE FROM %s WHERE citizenid = ?'
         local tableCount = #playertables
         local queries = table.create(tableCount, 0)
 
         for i = 1, tableCount do
             local v = playertables[i]
-            queries[i] = {query = query:format(v.table), values = { citizenid }}
+            queries[i] = { query = query:format(v.table), values = { citizenid } }
         end
 
         MySQL.transaction(queries, function(result2)
@@ -584,7 +584,7 @@ function QBCore.Player.DeleteCharacter(source, citizenid)
             end
         end)
     else
-        DropPlayer(source, Lang:t("info.exploit_dropped"))
+        DropPlayer(source, Lang:t('info.exploit_dropped'))
         TriggerEvent('qb-log:server:CreateLog', 'anticheat', 'Anti-Cheat', 'white', GetPlayerName(source) .. ' Has Been Dropped For Character Deletion Exploit', true)
     end
 end
@@ -592,17 +592,17 @@ end
 function QBCore.Player.ForceDeleteCharacter(citizenid)
     local result = MySQL.scalar.await('SELECT license FROM players where citizenid = ?', { citizenid })
     if result then
-        local query = "DELETE FROM %s WHERE citizenid = ?"
+        local query = 'DELETE FROM %s WHERE citizenid = ?'
         local tableCount = #playertables
         local queries = table.create(tableCount, 0)
         local Player = QBCore.Functions.GetPlayerByCitizenId(citizenid)
 
         if Player then
-            DropPlayer(Player.PlayerData.source, "An admin deleted the character which you are currently using")
+            DropPlayer(Player.PlayerData.source, 'An admin deleted the character which you are currently using')
         end
         for i = 1, tableCount do
             local v = playertables[i]
-            queries[i] = {query = query:format(v.table), values = { citizenid }}
+            queries[i] = { query = query:format(v.table), values = { citizenid } }
         end
 
         MySQL.transaction(queries, function(result2)
@@ -673,7 +673,7 @@ function QBCore.Functions.CreatePhoneNumber()
     local UniqueFound = false
     local PhoneNumber = nil
     while not UniqueFound do
-        PhoneNumber = math.random(100,999) .. math.random(1000000,9999999)
+        PhoneNumber = math.random(100, 999) .. math.random(1000000, 9999999)
         local query = '%' .. PhoneNumber .. '%'
         local result = MySQL.prepare.await('SELECT COUNT(*) as count FROM players WHERE charinfo LIKE ?', { query })
         if result == 0 then
