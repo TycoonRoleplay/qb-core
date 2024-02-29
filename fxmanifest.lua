@@ -15,7 +15,8 @@ shared_scripts {
     'shared/vehicles.lua',
     'shared/gangs.lua',
     'shared/weapons.lua',
-    'shared/locations.lua'
+    'shared/locations.lua',
+    'shared/tycoon.lua',
 }
 
 client_scripts {
@@ -23,7 +24,8 @@ client_scripts {
     'client/functions.lua',
     'client/loops.lua',
     'client/events.lua',
-    'client/drawtext.lua'
+    'client/drawtext.lua',
+    'client/tycoon.lua',
 }
 
 server_scripts {
@@ -34,7 +36,8 @@ server_scripts {
     'server/events.lua',
     'server/commands.lua',
     'server/exports.lua',
-    'server/debug.lua'
+    'server/tycoon.lua',
+    'server/debug.lua',
 }
 
 ui_page 'html/index.html'
