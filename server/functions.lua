@@ -22,13 +22,8 @@ end
 ---@param idtype string
 ---@return string?
 function QBCore.Functions.GetIdentifier(source, idtype)
-    local identifiers = GetPlayerIdentifiers(source)
-    for _, identifier in pairs(identifiers) do
-        if string.find(identifier, idtype) then
-            return identifier
-        end
-    end
-    return nil
+    if GetConvarInt('sv_fxdkMode', 0) == 1 then return 'license:fxdk' end
+    return GetPlayerIdentifierByType(source, idtype or 'license')
 end
 
 ---Gets a players server id (source). Returns 0 if no player is found.
@@ -109,7 +104,7 @@ end
 
 ---Get player passing property and value to check exists
 ---@param property string
----@param value string  
+---@param value string
 ---@return table?
 function QBCore.Functions.GetPlayerByCharInfo(property, value)
     for src in pairs(QBCore.Players) do
@@ -121,13 +116,12 @@ function QBCore.Functions.GetPlayerByCharInfo(property, value)
     return nil
 end
 
-
 ---Get all players. Returns the server ids of all players.
 ---@return table
 function QBCore.Functions.GetPlayers()
     local sources = {}
     for k in pairs(QBCore.Players) do
-        sources[#sources+1] = k
+        sources[#sources + 1] = k
     end
     return sources
 end
@@ -186,8 +180,9 @@ end
 function QBCore.Functions.SetPlayerBucket(source, bucket)
     if source and bucket then
         local plicense = QBCore.Functions.GetIdentifier(source, 'license')
+        Player(source).state:set('instance', bucket, true)
         SetPlayerRoutingBucket(source, bucket)
-        QBCore.Player_Buckets[plicense] = {id = source, bucket = bucket}
+        QBCore.Player_Buckets[plicense] = { id = source, bucket = bucket }
         return true
     else
         return false
@@ -201,7 +196,7 @@ end
 function QBCore.Functions.SetEntityBucket(entity, bucket)
     if entity and bucket then
         SetEntityRoutingBucket(entity, bucket)
-        QBCore.Entity_Buckets[entity] = {id = entity, bucket = bucket}
+        QBCore.Entity_Buckets[entity] = { id = entity, bucket = bucket }
         return true
     else
         return false
@@ -318,22 +313,22 @@ function PaycheckInterval()
                 if not payment then payment = Player.PlayerData.job.payment end
                 if Player.PlayerData.job and payment > 0 and (QBShared.Jobs[Player.PlayerData.job.name].offDutyPay or Player.PlayerData.job.onduty) then
                     if QBCore.Config.Money.PayCheckSociety then
-                        local account = exports['qb-management']:GetAccount(Player.PlayerData.job.name)
-                        if account ~= 0 then -- Checks if player is employed by a society
+                        local account = exports['qb-banking']:GetAccountBalance(Player.PlayerData.job.name)
+                        if account ~= 0 then          -- Checks if player is employed by a society
                             if account < payment then -- Checks if company has enough money to pay society
                                 TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('error.company_too_poor'), 'error')
                             else
                                 Player.Functions.AddMoney('bank', payment, 'paycheck')
-                                exports['qb-management']:RemoveMoney(Player.PlayerData.job.name, payment)
-                                TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('info.received_paycheck', {value = payment}))
+                                exports['qb-banking']:RemoveMoney(Player.PlayerData.job.name, payment, 'Employee Paycheck')
+                                TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('info.received_paycheck', { value = payment }))
                             end
                         else
                             Player.Functions.AddMoney('bank', payment, 'paycheck')
-                            TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('info.received_paycheck', {value = payment}))
+                            TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('info.received_paycheck', { value = payment }))
                         end
                     else
                         Player.Functions.AddMoney('bank', payment, 'paycheck')
-                        TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('info.received_paycheck', {value = payment}))
+                        TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('info.received_paycheck', { value = payment }))
                     end
                 end
             end
@@ -477,9 +472,9 @@ end
 ---@param permission string
 ---@return boolean
 function QBCore.Functions.HasPermission(source, permission)
-    if type(permission) == "string" then
+    if type(permission) == 'string' then
         if IsPlayerAceAllowed(source, permission) then return true end
-    elseif type(permission) == "table" then
+    elseif type(permission) == 'table' then
         for _, permLevel in pairs(permission) do
             if IsPlayerAceAllowed(source, permLevel) then return true end
         end
@@ -494,7 +489,7 @@ end
 function QBCore.Functions.GetPermission(source)
     local src = source
     local perms = {}
-    for _, v in pairs (QBCore.Config.Server.Permissions) do
+    for _, v in pairs(QBCore.Config.Server.Permissions) do
         if IsPlayerAceAllowed(src, v) then
             perms[v] = true
         end
@@ -544,14 +539,8 @@ end
 function QBCore.Functions.IsLicenseInUse(license)
     local players = GetPlayers()
     for _, player in pairs(players) do
-        local identifiers = GetPlayerIdentifiers(player)
-        for _, id in pairs(identifiers) do
-            if string.find(id, 'license') then
-                if id == license then
-                    return true
-                end
-            end
-        end
+        local playerLicense = QBCore.Functions.GetIdentifier(player, 'license')
+        if playerLicense == license then return true end
     end
     return false
 end
@@ -587,7 +576,7 @@ function QBCore.Functions.PrepForSQL(source, data, pattern)
     local src = source
     local player = QBCore.Functions.GetPlayer(src)
     local result = string.match(data, pattern)
-    if not result or string.len(result) ~= string.len(data)  then
+    if not result or string.len(result) ~= string.len(data) then
         TriggerEvent('qb-log:server:CreateLog', 'anticheat', 'SQL Exploit Attempted', 'red', string.format('%s attempted to exploit SQL!', player.PlayerData.license))
         return false
     end
